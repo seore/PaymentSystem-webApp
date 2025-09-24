@@ -1,63 +1,26 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+
+{% block body_class %}theme-hero{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-lg">
-                <div class="card-header text-white text-center" style="background-color: #4A6F88;">
-                    <h2>Request Money</h2>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            {{ form|crispy }}
-                        </div>
-                        <button type="submit" class="btn btn-custom btn-block">Request</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+<div class="dashboard-wrap">
+  <div class="dashboard-card card shadow-lg">
+    <div class="dashboard-head text-center p-3">
+      <h2 class="m-0">Request Money</h2>
     </div>
+
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          {{ form|crispy }}
+        </div>
+
+        <button type="submit" class="btn btn-dashboard w-100">Request</button>
+      </form>
+    </div>
+  </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-{% endblock %}
-
-{% block styles %}
-<style>
-    h2 {
-        font-weight: bold;
-    }
-
-    .card-header {
-        background: linear-gradient(90deg, #4caf50, #215cf3);
-        text-align: center;
-    }
-
-    .card-body {
-        padding: 20px;
-    }
-
-    .btn-custom {
-        background: linear-gradient(90deg, #4caf50, #215cf3);
-        color: white;
-        border: none;
-        border-radius: 5px;
-        padding: 10px 20px;
-        transition: background 0.3s;
-    }
-
-    .btn-custom:hover {
-        background: linear-gradient(90deg, #4caf50, #215cf3);
-    }
-
-    .card {
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-</style>
-{% endblock %}
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}
