@@ -1,60 +1,56 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+
+{% block body_class %}theme-hero{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-lg">
-                <div class="card-header text-center text-white" style="background-color: #4A6F88;">
-                    <h2>Send Money</h2>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                            <div class="card-title mb-3">
-                                <h5>Enter Transfer Details Below</h5>
-                                {{ form|crispy }}
-                                <button type="submit" class="btn btn-custom btn-block">Send</button>
-                            </div>
-                    </form>
-                </div>
-            </div>
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+
+      <div class="card send-card shadow-lg">
+        <div class="card-header text-center text-white send-head">
+          <h2 class="mb-0">Send Money</h2>
         </div>
+
+        <div class="card-body">
+          <h5 class="mb-3">Enter transfer details</h5>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {{ form|crispy }}
+
+            <button type="submit" class="btn btn-gradient w-100 mt-2">Send</button>
+          </form>
+        </div>
+      </div>
+
     </div>
+  </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}
 
 {% block styles %}
 <style>
-    h2 {
-        background: #4A6F88;
-        -webkit-background-clip: text;
-        color: transparent;
-        font-weight: bold;
-        font-size: 20px;
-    }
+  .send-card{
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.6);
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(8px);
+  }
+  @media (prefers-color-scheme: dark){
+    .send-card{ background: rgba(18,22,27,.65); border-color: rgba(255,255,255,.12); }
+  }
 
-    .card-body {
-        padding: 20px;
-    }
+  .send-head{ background:#4A6F88; border-top-left-radius:12px; border-top-right-radius:12px; }
 
-    .card {
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+  .card-body{ padding: 22px; color:#0f172a; }
+  .card-body h5{ color:#0f172a; font-weight:700; }
 
-    .btn-custom {
-        background: #4A6F88;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        padding: 10px 20px;
-        transition: background 0.2s;
-    }
+  /* gradient primary button already defined in base as .btn-gradient */
+  .btn-gradient{ width:100%; }
 
-    .btn-custom:hover {
-        background: #4A6F88;
-    }
+  /* tighten crispy spacing a bit */
+  .form-group, .mb-3{ margin-bottom: .9rem !important; }
 </style>
 {% endblock %}
