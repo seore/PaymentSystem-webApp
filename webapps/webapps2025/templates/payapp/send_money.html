@@ -4,53 +4,24 @@
 {% block body_class %}theme-hero{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-md-6">
+<div class="dashboard-wrap">
+  <div class="dashboard-card card shadow-lg">
+    <div class="dashboard-head text-center p-3">
+      <h2 class="m-0">Send Money</h2>
+    </div>
 
-      <div class="card send-card shadow-lg">
-        <div class="card-header text-center text-white send-head">
-          <h2 class="mb-0">Send Money</h2>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="card-title mb-3">
+          <h5>Enter Transfer Details Below</h5>
         </div>
 
-        <div class="card-body">
-          <h5 class="mb-3">Enter transfer details</h5>
+        {{ form|crispy }}
 
-          <form method="post" novalidate>
-            {% csrf_token %}
-            {{ form|crispy }}
-
-            <button type="submit" class="btn btn-gradient w-100 mt-2">Send</button>
-          </form>
-        </div>
-      </div>
-
+        <button type="submit" class="btn btn-dashboard w-100 mt-2">Send</button>
+      </form>
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block styles %}
-<style>
-  .send-card{
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,.6);
-    background: rgba(255,255,255,.88);
-    backdrop-filter: blur(8px);
-  }
-  @media (prefers-color-scheme: dark){
-    .send-card{ background: rgba(18,22,27,.65); border-color: rgba(255,255,255,.12); }
-  }
-
-  .send-head{ background:#4A6F88; border-top-left-radius:12px; border-top-right-radius:12px; }
-
-  .card-body{ padding: 22px; color:#0f172a; }
-  .card-body h5{ color:#0f172a; font-weight:700; }
-
-  /* gradient primary button already defined in base as .btn-gradient */
-  .btn-gradient{ width:100%; }
-
-  /* tighten crispy spacing a bit */
-  .form-group, .mb-3{ margin-bottom: .9rem !important; }
-</style>
 {% endblock %}
