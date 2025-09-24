@@ -52,44 +52,43 @@ def registration_admin(request):
 
 @login_required
 def dashboard(request):
-    try:
-        account = Account.objects.get(user=request.user)
-    except Account.DoesNotExist:
-        account = Account.objects.create(user=request.user)
+    # create or fetch the user's account
+    account, _ = Account.objects.get_or_create(user=request.user)
 
-    account.refresh_from_db()
+    # pull the user's transactions (join recipient for fewer queries)
+    transactions = (
+        Transaction.objects
+        .filter(sender=request.user)
+        .select_related('recipient')
+        .order_by('-timestamp')
+    )
 
-    transactions = Transaction.objects.filter(sender=request.user).order_by('-timestamp')
-
+    # build display rows
     transaction_display_data = []
-
-    for transaction in transactions:
-        if transaction.converted_amount:
-            display_amount = f"{transaction.converted_amount} {transaction.converted_currency}"
-        else:
-            display_amount = f"{transaction.amount} {request.user.currency}"
-
+    for t in transactions:
+        currency = t.converted_currency or getattr(request.user, 'currency', '')
+        amount = t.converted_amount if t.converted_amount is not None else t.amount
         transaction_display_data.append({
-            'recipient': transaction.recipient.username,
-            'display_amount': display_amount,
-            'status': transaction.status,
-            'timestamp': transaction.timestamp,
+            'recipient': t.recipient.username,
+            'display_amount': f"{amount} {currency}",
+            'status': t.status,
+            'timestamp': t.timestamp,
         })
 
-        total_transactions = transactions.count()
-        last_transaction = transactions.first()
+    # --- these must be OUTSIDE the loop ---
+    total_transactions = transactions.count()
+    last_transaction = transactions.first()
+    currencies = [t.converted_currency or getattr(request.user, 'currency', '') for t in transactions]
+    most_used_currency = max(set(currencies), key=currencies.count) if currencies else 'N/A'
 
-        currencies = [transaction.converted_currency if transaction.converted_currency else request.user.currency for
-                      transaction in transactions]
-        most_used_currency = max(set(currencies), key=currencies.count) if currencies else 'N/A'
+    return render(request, 'payapp/dashboard.html', {
+        'account': account,
+        'transaction_display_data': transaction_display_data,
+        'total_transactions': total_transactions,
+        'last_transaction': last_transaction,
+        'most_used_currency': most_used_currency,
+    })
 
-        return render(request, 'payapp/dashboard.html', {
-            'account': account,
-            'transaction_display_data': transaction_display_data,
-            'total_transactions': total_transactions,
-            'last_transaction': last_transaction,
-            'most_used_currency': most_used_currency,
-        })
 
 
 @login_required
