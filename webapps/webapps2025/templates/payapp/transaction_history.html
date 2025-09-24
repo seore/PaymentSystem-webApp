@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block title %}Transaction History{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4 text-black">Transaction History</h2>
+
+    {% if transactions %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover border rounded shadow-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Sender</th>
+                        <th>Recipient</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ transaction.sender.username }}</td>
+                        <td>{{ transaction.recipient.username }}</td>
+                        <td>${{ transaction.amount }}</td>
+                        <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
+                        <td>
+                            {% if transaction.status == "COMPLETED" %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif transaction.status == "PENDING" %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif transaction.status == "REJECTED" %}
+                                <span class="badge bg-danger">Failed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="alert alert-warning text-center">No transactions found.</p>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <a href="{% url 'dashboard' %}" class="btn btn-custom">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .container {
+        padding-top: 20px;
+    }
+
+    h2 {
+        background: linear-gradient(90deg, #4caf50, #2196F3);
+        -webkit-background-clip: text;
+        color: transparent;
+        font-weight: bold;
+    }
+
+    .btn-custom {
+        background: linear-gradient(90deg, #4caf50, #2196F3);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        transition: background 0.3s;
+    }
+
+    .btn-custom:hover {
+        background: linear-gradient(90deg, #4caf50, #2196F3);
+    }
+
+    .table {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-hover tbody:hover {
+        background-color: #f1f1f1;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: #f9f9f9;
+    }
+
+    .badge {
+        padding: 0.5em 1em;
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}
