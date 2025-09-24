@@ -1,137 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebApps2025</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Lato:wght@700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Work Sans', sans-serif;
-            background-color: #F8F8F8;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-            min-height: 100vh;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebApps2025</title>
 
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Lato', sans-serif;
-            font-weight: 700;
-        }
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;800&family=Lato:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
-        .navbar {
-            background: #4A6F88;
-            color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .navbar .navbar-brand,
-        .navbar .nav-link {
-            color: white !important;
-            font-size: 1.3rem;
-            font-family: 'Avenir Next', sans-serif;
-        }
-
-        .navbar .nav-link:hover {
-            color: #f8f9fa !important;
-            text-decoration: underline;
-        }
-
-        .container {
-            padding-top: 20px;
-        }
-
-        .custom-card:hover {
-            transform: translateY(-3px);
-        }
-
-        .btn-custom {
-            background: #4A6F88;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 10px 20px;
-            transition: background 0.3s;
-        }
-
-        .btn-custom:hover {
-            background: #4A6F88;
-        }
-
-        .asteriskField {
-        color: red !important;
+  <style>
+    :root{
+      --brand:#66c6ff;
+      --accent:#8fffab;
+      --hero1:#0b2b4c;
+      --hero2:#162b3f;
+      --text-muted:#dee4ed;
     }
 
-        footer {
-            background: #4A6F88;
-            color: white;
-            font-family: 'Avenir Next', sans-serif;
-            text-align: center;
-            padding: 20px 0;
-        }
-    </style>
+    body {
+      font-family: 'Work Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background-color: #F8F8F8;
+      display: grid;
+      grid-template-rows: auto 1fr auto; 
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Lato', sans-serif;
+      font-weight: 700;
+    }
+
+    /* Navbar */
+    .navbar { background:#4A6F88; color:#fff; box-shadow: 0 4px 6px rgba(0,0,0,.1); }
+    .navbar .navbar-brand,
+    .navbar .nav-link { color:#fff !important; font-size:1.1rem; }
+    .navbar .nav-link:hover { color:#f8f9fa !important; text-decoration: underline; }
+
+    .container { padding-top: 20px; }
+    .container .after-hero { padding-left: 180px; }
+
+    .custom-card:hover { transform: translateY(-3px); }
+
+    .btn-custom { background:#4A6F88; color:#fff; border:none; border-radius:5px; padding:10px 20px; transition: background .3s; }
+    .btn-custom:hover { background:#3d5e73; }
+
+    .asteriskField { color: red !important; }
+
+    .home-hero{
+      background:
+        radial-gradient(1200px 500px at 20% -10%, rgba(102,198,255,.25), transparent),
+        linear-gradient(180deg, var(--hero1), var(--hero2));
+      color:#eaf4ff;
+      padding: 96px 0 140px; 
+      position: relative;
+      overflow:hidden;
+    }
+
+    .home-hero.fullbleed {
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
+    }
+
+    .theme-hero { background: radial-gradient(1200px 500px at 20% -10%, rgba(102,198,255,.25), transparent), 
+        linear-gradient(180deg, var(--hero1), var(--hero2)); color: #eaf4ff; }
+
+    .theme-hero .container { padding-top: 0; }
+    .theme-hero footer { background: transparent; border-top: 1px solid rgba(255, 255, 255, .18); }
+
+    .badge-soft{
+      display:inline-block;
+      background: rgba(26, 120, 167, 0.58);
+      border:1px solid rgba(63, 74, 154, 0.801);
+      color:#eaf4ff;
+      padding:6px 10px; border-radius:999px; font-weight:600;
+    }
+    .text-gradient{
+      background: linear-gradient(90deg, #fff, var(--brand), var(--accent));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .text-hero{ color:#cfe3fb; }
+
+    .btn-gradient{
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      border:none; color:#0b0d10;
+      box-shadow:0 10px 30px rgba(0,0,0,.15);
+    }
+    .btn-gradient:hover{ filter:brightness(1.05); transform: translateY(-1px); }
+    .btn-soft{
+      background: rgba(102,198,255,.12);
+      border:1px solid rgba(102,198,255,.35);
+      color:#0b2b4c;
+    }
+
+    /* After-hero container that slightly overlaps the hero without cramping */
+    .after-hero { margin-top: -48px; }
+    @media (max-width: 768px){ .after-hero { margin-top: -24px; } }
+
+    /* Glass summary card */
+    .glass-card{
+      max-width:960px;
+      background: rgba(70, 162, 195, 0.627);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(45, 108, 185, 0.8);
+      border-radius:20px;
+      padding:22px 24px;
+    }
+    @media (prefers-color-scheme: dark){
+      .glass-card{ background: rgba(58, 83, 181, 0.6); border-color: rgba(255,255,255,.12); }
+    }
+    .kpi-label{ display:block; font-size:.9rem; color:var(--text-muted); }
+    .kpi-value{ font-weight:800; font-size:1.35rem; }
+    .border-md-x{ border-left:1px solid rgba(0, 0, 0, 0.713); border-right:1px solid rgba(180, 31, 31, 0.08); }
+    @media (max-width: 767.98px){ .border-md-x{ border:0; } }
+
+    .feature-card{
+      background:#fff; border:1px solid #e6eaee; border-radius:18px; padding:18px;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    @media (prefers-color-scheme: dark){
+      .feature-card{ background:#45648a; border-color:#222a33; }
+    }
+    .feature-card:hover{ transform: translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.15); }
+    .icon-pill{
+      width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;
+    }
+    .bg-accent-subtle{ background:rgba(143,255,171,.18); }
+    .bg-info-subtle{ background:rgba(102,198,255,.18); }
+    .bg-warning-subtle{ background:rgba(203, 157, 16, 0.18); }
+
+    footer{
+      background:#4A6F88 !important;
+      color:#fff !important;
+      text-align:center;
+      padding: 22px 0 !important;
+      border-top: 1px solid rgba(255,255,255,.18);
+    }
+  </style>
 </head>
-<body>
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar">
+<body class="{% block body_class %}{% endblock %}">
+  <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand me-6" href="{% url 'home' %}">Payapp</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
-                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNavDropdown">
-            <ul class="navbar-nav ms-auto">
-                {% if user.is_authenticated %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-                </li>
-                <li class="nav-item dropdown me-3">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
-                       data-bs-toggle="dropdown" aria-expanded="false">
-                        Pay
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                        {% if not user.is_staff %}
-                        <li><a class="dropdown-item" href="{% url 'send_money' %}">Send Money</a></li>
-                        <li><a class="dropdown-item" href="{% url 'request_money' %}">Request Money</a></li>
-                        {% endif %}
-                    </ul>
-                </li>
-                {% if user.is_staff %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'register_admin' %}">Register Admin</a>
-                </li>
+      <a class="navbar-brand me-6" href="{% url 'home' %}">Payapp</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
+              aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNavDropdown">
+        <ul class="navbar-nav ms-auto">
+          {% if user.is_authenticated %}
+            <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
+
+            <li class="nav-item dropdown me-3">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                 data-bs-toggle="dropdown" aria-expanded="false">Pay</a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                {% if not user.is_staff %}
+                  <li><a class="dropdown-item" href="{% url 'send_money' %}">Send Money</a></li>
+                  <li><a class="dropdown-item" href="{% url 'request_money' %}">Request Money</a></li>
                 {% endif %}
-                <li class="nav-item">
-                    <form method="POST" action="{% url 'logout' %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-link nav-link">Logout</button>
-                    </form>
-                </li>
-                {% else %}
-                <li class="nav-item me-3">
-                    <a class="nav-link" href="{% url 'register' %}">Register</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'login' %}">Login</a>
-                </li>
-                {% endif %}
-            </ul>
-        </div>
+              </ul>
+            </li>
+
+            {% if user.is_staff %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'register_admin' %}">Register Admin</a></li>
+            {% endif %}
+
+            <li class="nav-item">
+              <form method="POST" action="{% url 'logout' %}">{% csrf_token %}
+                <button type="submit" class="btn btn-link nav-link">Logout</button>
+              </form>
+            </li>
+          {% else %}
+            <li class="nav-item me-3"><a class="nav-link" href="{% url 'register' %}">Register</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
+          {% endif %}
+        </ul>
+      </div>
     </div>
-</nav>
+  </nav>
 
-<!-- Main Content -->
-<div class="container">
-    {% block content %}
-    {% endblock %}
-</div>
+  <!-- Main Content -->
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
 
-<!-- Footer -->
-<footer>
-    &copy; 2025 WebApps2025. All rights reserved.
-</footer>
+  <!-- Footer -->
+  <footer>
+    &copy; 2025 Payment System. All rights reserved.
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
