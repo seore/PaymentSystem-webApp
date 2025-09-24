@@ -1,17 +1,16 @@
 {% extends 'base.html' %}
-
+{% block body_class %}theme-hero{% endblock %}
 {% load crispy_forms_tags %}
-
 {% block title %}Transaction History{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="text-center mb-4 text-black">Transaction History</h2>
+    <h2 class="text-center mb-4 text-gradient">Transaction History</h2>
 
     {% if transactions %}
-        <div class="table-responsive">
-            <table class="table table-striped table-hover border rounded shadow-sm">
-                <thead class="table-dark">
+        <div class="table-responsive glass-table shadow-sm rounded-3">
+            <table class="table align-middle mb-0">
+                <thead class="thead-glass">
                     <tr>
                         <th>#</th>
                         <th>Sender</th>
@@ -31,11 +30,11 @@
                         <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
                         <td>
                             {% if transaction.status == "COMPLETED" %}
-                                <span class="badge bg-success">Completed</span>
+                                <span class="badge status-completed">Completed</span>
                             {% elif transaction.status == "PENDING" %}
-                                <span class="badge bg-warning text-dark">Pending</span>
+                                <span class="badge status-pending">Pending</span>
                             {% elif transaction.status == "REJECTED" %}
-                                <span class="badge bg-danger">Failed</span>
+                                <span class="badge status-failed">Failed</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -44,58 +43,34 @@
             </table>
         </div>
     {% else %}
-        <p class="alert alert-warning text-center">No transactions found.</p>
+        <p class="alert alert-warning text-center glass-alert">No transactions found.</p>
     {% endif %}
 
     <div class="text-center mt-4">
-        <a href="{% url 'dashboard' %}" class="btn btn-custom">Back to Dashboard</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-gradient px-4">Back to Dashboard</a>
     </div>
 </div>
 {% endblock %}
 
 {% block styles %}
 <style>
-    .container {
-        padding-top: 20px;
-    }
-
-    h2 {
-        background: linear-gradient(90deg, #4caf50, #2196F3);
-        -webkit-background-clip: text;
-        color: transparent;
-        font-weight: bold;
-    }
-
-    .btn-custom {
-        background: linear-gradient(90deg, #4caf50, #2196F3);
-        color: white;
-        border: none;
-        border-radius: 5px;
-        padding: 10px 20px;
-        transition: background 0.3s;
-    }
-
-    .btn-custom:hover {
-        background: linear-gradient(90deg, #4caf50, #2196F3);
-    }
-
-    .table {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .table-hover tbody:hover {
-        background-color: #f1f1f1;
-    }
-
-    .table-striped tbody tr:nth-of-type(odd) {
-        background-color: #f9f9f9;
-    }
-
-    .badge {
-        padding: 0.5em 1em;
-        border-radius: 12px;
-    }
+    .glass-table { background: rgba(255,255,255,.85); 
+        backdrop-filter: blur(18px); 
+        border: 1px solid rgba(255,255,255,.6); }
+    @media (prefers-color-scheme: dark) { .glass-table {background: rgba(18,22,27,.6); 
+        border-radius: rgba(255,255,255,.12);}}
+    .thead-glass th { background: linear-gradient(90deg, var(--hero1), var(--hero2)); 
+        color: #eaf4ff; border: none;}
+    @media (prefers-color-scheme: dark) {.table > :not(caption) > * > * {border-color: rgba(255,255,255,.12);}}
+    .table tbody tr:hover {background: color-mix(in srgb, color #ffffff 30%, transparent) ;}
+    
+    .badge { border-radius: 999px; padding: .45rem .8rem; font-weight: 600; }
+    .status-completed { background: color-mix(in srgb, var(--accent) 70%, #ffffff 0%); color: #0b2b4c;}
+    .status-pending { background: #ffe9b3; color: #4a3b00; }
+    .status-failed { background: #ffb3b3; color: #5b0000;}
+    .glass-alert {background: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.6);}
+    .text-gradient { background: linear-gradient(90deg, #fff, var(--brand), var(--accent)); 
+        -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .table > :not(caption) > * > * {border-color: rgba(0,0,0,.06);}
 </style>
 {% endblock %}
