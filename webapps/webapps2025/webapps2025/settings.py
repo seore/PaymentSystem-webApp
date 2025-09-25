@@ -99,7 +99,6 @@ DEFAULT_FROM_EMAIL = "Payapp <no-reply@payapp>"
 
 
 # Celery email backend
-
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_TASK_TIME_LIMIT = 30
