@@ -1,13 +1,16 @@
 import requests
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.sites.shortcuts import get_current_site
+from django.urls import reverse
 from django.http import JsonResponse
 from decimal import Decimal
 from django.views.decorators.http import require_GET
-from django.db import transaction
+from django.db import transaction as dj_tx
 from django.db.models import Q
 from .models import Account, Transaction, CustomUser
 from .forms import PaymentForm, RequestForm
+from .tasks import send_transaction_email
 from django.contrib import messages
 
 EXCHANGE_RATES = {
@@ -16,6 +19,9 @@ EXCHANGE_RATES = {
     "GBP": {"USD": Decimal(1.33), "EUR": Decimal(1.14)},
 }
 
+def _abs(request, path):
+    scheme = "https" if request.is_secure() else "http"
+    return f"{scheme}://{get_current_site(request).domain}{path}"
 
 def is_admin(user):
     return user.is_authenticated and user.is_staff
@@ -90,9 +96,8 @@ def dashboard(request):
     })
 
 
-
 @login_required
-@transaction.atomic
+@dj_tx.atomic
 def send_money(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST, user=request.user)
@@ -103,51 +108,94 @@ def send_money(request):
             sender_account, _ = Account.objects.get_or_create(user=request.user)
             recipient_account, _ = Account.objects.get_or_create(user=recipient)
 
-            sender_currency = request.user.currency
-            recipient_currency = recipient.currency
+            sender_currency = getattr(request.user, "currency", "USD")
+            recipient_currency = getattr(recipient, "currency", sender_currency)
 
-            # Check balance early
+            # helper: enqueue notification emails only after commit succeeds
+            def notify(txn, *, converted_amount=None, converted_currency=None):
+                dash = _abs(request, reverse("dashboard"))
+                amount_display = f"{sender_currency} {amount:,.2f}"
+                converted_display = (
+                    f"{converted_currency} {converted_amount:,.2f}"
+                    if converted_amount is not None
+                    else None
+                )
+
+                # Sender email
+                if getattr(request.user, "email", None):
+                    send_transaction_email.delay(
+                        to_email=request.user.email,
+                        subject=f"You sent {amount_display} to {recipient.username}",
+                        template="emails/transaction.html",
+                        context={
+                            "heading": "Payment Sent",
+                            "name": request.user.get_username(),
+                            "line1": f"You sent {amount_display} to {recipient.username}.",
+                            "amount_display": amount_display,
+                            "converted_display": converted_display,
+                            "reference": getattr(txn, "id", txn.pk),
+                            "dashboard_url": dash,
+                        },
+                    )
+
+                # Recipient email
+                if getattr(recipient, "email", None):
+                    recv_amount_display = converted_display or amount_display
+                    send_transaction_email.delay(
+                        to_email=recipient.email,
+                        subject=f"You received {recv_amount_display} from {request.user.username}",
+                        template="emails/transaction.html",
+                        context={
+                            "heading": "Payment Received",
+                            "name": recipient.get_username(),
+                            "line1": f"You received {recv_amount_display} from {request.user.username}.",
+                            "amount_display": recv_amount_display,
+                            "converted_display": None,
+                            "reference": getattr(txn, "id", txn.pk),
+                            "dashboard_url": dash,
+                        },
+                    )
+
+            # Same-currency transfer
             if sender_currency == recipient_currency:
                 if sender_account.balance < amount:
                     messages.error(request, 'Insufficient funds.')
                     return redirect('send_money')
 
-                # Update balances
                 sender_account.balance -= amount
                 recipient_account.balance += amount
                 sender_account.save()
                 recipient_account.save()
 
-                # Record transaction
-                Transaction.objects.create(
+                txn = Transaction.objects.create(
                     sender=request.user,
                     recipient=recipient,
                     amount=amount,
                     status='COMPLETED'
                 )
+                dj_tx.on_commit(lambda: notify(txn))
                 messages.success(request, 'Payment has been successfully sent.')
+
+            # Cross-currency transfer
             else:
-                # Convert currency
                 conversion_url = f"http://127.0.0.1:8000/conversion/{sender_currency}/{recipient_currency}/{amount}/"
-                response = requests.get(conversion_url)
+                response = requests.get(conversion_url, timeout=10)
 
                 if response.status_code == 200:
                     data = response.json()
-                    converted_amount = Decimal(data['converted_amount'])
-                    conversion_rate = data['rate']
+                    converted_amount = Decimal(str(data['converted_amount']))
+                    conversion_rate = Decimal(str(data['rate']))
 
                     if sender_account.balance < amount:
                         messages.error(request, 'Insufficient funds for conversion.')
                         return redirect('send_money')
 
-                    # Update balances
                     sender_account.balance -= amount
                     recipient_account.balance += converted_amount
                     sender_account.save()
                     recipient_account.save()
 
-                    # Record transaction
-                    Transaction.objects.create(
+                    txn = Transaction.objects.create(
                         sender=request.user,
                         recipient=recipient,
                         amount=amount,
@@ -156,6 +204,7 @@ def send_money(request):
                         conversion_rate=conversion_rate,
                         status='COMPLETED'
                     )
+                    dj_tx.on_commit(lambda: notify(txn, converted_amount=converted_amount, converted_currency=recipient_currency))
                     messages.success(request, 'Payment sent successfully!')
                 else:
                     messages.error(request, "Currency conversion failed.")
@@ -166,6 +215,7 @@ def send_money(request):
         form = PaymentForm(user=request.user)
 
     return render(request, 'payapp/send_money.html', {'form': form})
+
 
 
 @login_required
