@@ -6,7 +6,7 @@ from django.conf import settings
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_jitter=True, max_retries=5)
 def send_transaction_email(self, *, to_email, subject, template, context):
     html_body = render_to_string(template, context)
-    text_body = render_to_string("emails/transaction.txt", context)
+    text_body = render_to_string("webapps/webapps2025/templates/payapp/transaction.txt", context)
     msg = EmailMultiAlternatives(
         subject=subject,
         body=text_body,
