@@ -19,7 +19,7 @@ urlpatterns = [
         template_name='registration/password_reset_form.html',
         email_template_name='registration/password_reset_email.html',
         subject_template_name='registration/password_reset_subject.txt',
-        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@payapp"),
+        from_email=settings.DEFAULT_FROM_EMAIL,
         success_url=reverse_lazy('password_reset_done'),
     ), name='password_reset_form'),
     path('password_reset_done/', auth_views.PasswordResetDoneView.as_view(
