@@ -101,8 +101,6 @@ EMAIL_TIMEOUT = os.getenv("EMAIL_TIMEOUT", "10")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Payapp <no-reply@payapp>")
 
 
-
-
 # Celery email backend
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
