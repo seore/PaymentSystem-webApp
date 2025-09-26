@@ -1,7 +1,6 @@
 import requests
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
 from django.http import JsonResponse
 from decimal import Decimal
@@ -20,8 +19,8 @@ EXCHANGE_RATES = {
 }
 
 def _abs(request, path):
-    scheme = "https" if request.is_secure() else "http"
-    return f"{scheme}://{get_current_site(request).domain}{path}"
+    #scheme = "https" if request.is_secure() else "http"
+    return f"{request.scheme}://{request.get_host}{path}"
 
 def is_admin(user):
     return user.is_authenticated and user.is_staff

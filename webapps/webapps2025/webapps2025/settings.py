@@ -29,7 +29,6 @@ AUTH_USER_MODEL = 'register.CustomUser'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    'django.contrib.sites',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -44,7 +43,8 @@ INSTALLED_APPS = [
     'payapp',
 ]
 
-SITE_ID = 1
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
