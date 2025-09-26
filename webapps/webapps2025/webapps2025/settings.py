@@ -94,7 +94,6 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 if SENDGRID_API_KEY:
-    INSTALLED_APPS += ["anymail"]
     EMAIL_BACKEND = "anymail.backends.sendgrid.EmailBackend"
     ANYMAIL = {
         "SENDGRID_API_KEY": SENDGRID_API_KEY,
