@@ -1,15 +1,23 @@
 import secrets
+import stripe
+
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import logout
 from django.utils import timezone
 from django.urls import reverse
+from django.conf import settings
 from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse, HttpResponseBadRequest
 
 from .models import PaymentRequest, Transaction
+
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 def _generate_short_code() -> str:
@@ -102,18 +110,104 @@ def public_pay_page(request, short_code):
         return render(request, "payapp/payment_expired.html", {"payment": payment_request})
 
     if request.method == "POST":
-        # TODO: integrate real payment gateway here.
-        Transaction.objects.create(
-            payment_request=payment_request,
-            status=Transaction.STATUS_SUCCESS,
-            amount=payment_request.amount,
-            currency=payment_request.currency,
+        # Create Stripe Checkout session
+        success_url = request.build_absolute_uri(
+            reverse("payapp:payment_success")
+        ) + "?session_id={CHECKOUT_SESSION_ID}"
+
+        cancel_url = request.build_absolute_uri(
+            reverse("payapp:payment_failed")
         )
-        payment_request.status = PaymentRequest.STATUS_PAID
-        payment_request.save(update_fields=["status"])
-        return redirect("payapp:payment_success")
+
+        # Stripe amount is in the smallest currency unit (e.g. pence)
+        amount_in_minor = int(payment_request.amount * 100)
+
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            mode="payment",
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": payment_request.currency.lower(),
+                        "product_data": {
+                            "name": payment_request.description or f"Payment {payment_request.short_code}",
+                        },
+                        "unit_amount": amount_in_minor,
+                    },
+                    "quantity": 1,
+                }
+            ],
+            metadata={
+                "short_code": payment_request.short_code,
+            },
+            success_url=success_url,
+            cancel_url=cancel_url,
+        )
+
+        # Redirect the customer to Stripe Checkout
+        return redirect(session.url, code=303)
 
     return render(request, "payapp/public_pay.html", {"payment": payment_request})
+
+
+@csrf_exempt
+def stripe_webhook(request):
+    """
+    Handle Stripe webhook events.
+    We care about: checkout.session.completed
+    """
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+    webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+
+    if not webhook_secret:
+        # If you haven't set it yet, just ignore for now
+        return HttpResponse(status=200)
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, webhook_secret
+        )
+    except ValueError:
+        # Invalid payload
+        return HttpResponseBadRequest("Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        # Invalid signature
+        return HttpResponseBadRequest("Invalid signature")
+
+    # Handle the event type
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+
+        short_code = session.get("metadata", {}).get("short_code")
+        amount_total = session.get("amount_total")  # in minor units
+        currency = session.get("currency", "gbp").upper()
+        provider_txn_id = session.get("payment_intent") or session.get("id")
+
+        if short_code:
+            try:
+                payment_request = PaymentRequest.objects.get(short_code=short_code)
+            except PaymentRequest.DoesNotExist:
+                payment_request = None
+
+            if payment_request:
+                # Mark as paid
+                payment_request.status = PaymentRequest.STATUS_PAID
+                payment_request.save(update_fields=["status"])
+
+                # Create transaction record
+                Transaction.objects.create(
+                    payment_request=payment_request,
+                    status=Transaction.STATUS_SUCCESS,
+                    amount=(amount_total or 0) / 100 if amount_total else payment_request.amount,
+                    currency=currency,
+                    provider_txn_id=provider_txn_id or "",
+                    raw_response=event,
+                )
+
+    # Return a 200 response to acknowledge receipt
+    return HttpResponse(status=200)
+
 
 
 def payment_success(request):

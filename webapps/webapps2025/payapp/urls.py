@@ -10,4 +10,6 @@ urlpatterns = [
     path("pay/<str:short_code>/", views.public_pay_page, name="public_pay"),
     path("payments/success/", views.payment_success, name="payment_success"),
     path("payments/failed/", views.payment_failed, name="payment_failed"),
+
+    path("webhooks/stripe/", views.stripe_webhook, name="stripe_webhook"),
 ]
