@@ -1,2 +1,3 @@
-web: gunicorn webapps2025.webapps2025.wsgi:application
+web: gunicorn webapps.webapps2025.webapps2025.wsgi:application
+
 
