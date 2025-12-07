@@ -29,3 +29,4 @@ celery>=5.3,<6
 redis>=5
 django-celery-results>=2.5
 django-anymail
+python-dotenv
