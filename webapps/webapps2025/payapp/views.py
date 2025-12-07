@@ -3,6 +3,7 @@ import stripe
 
 from datetime import timedelta
 
+from django.db.models.functions import TruncDate
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count, Q
@@ -14,7 +15,7 @@ from django.conf import settings
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, HttpResponseBadRequest
 
-from .models import PaymentRequest, Transaction
+from .models import PaymentRequest, Transaction, PaymentView, PaymentConversion
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -41,12 +42,56 @@ def dashboard(request):
         .order_by("-created_at")[:20]
     )
 
+    # Simple analytics: last 7 days views & payments
+    from datetime import timedelta
+    today = timezone.now().date()
+    week_ago = today - timedelta(days=6)
+
+    views_qs = (
+        PaymentView.objects
+        .filter(payment_request__merchant=request.user,
+                timestamp__date__gte=week_ago)
+        .annotate(day=TruncDate("timestamp"))
+        .values("day")
+        .annotate(count=Count("id"))
+        .order_by("day")
+    )
+
+    paid_qs = (
+        Transaction.objects
+        .filter(payment_request__merchant=request.user,
+                status=Transaction.STATUS_SUCCESS,
+                created_at__date__gte=week_ago)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(count=Count("id"))
+        .order_by("day")
+    )
+
+    # Build arrays for Chart.js
+    labels = []
+    views_data = []
+    paid_data = []
+
+    day_index = {v["day"]: v["count"] for v in views_qs}
+    paid_index = {p["day"]: p["count"] for p in paid_qs}
+
+    for i in range(7):
+        d = week_ago + timedelta(days=i)
+        labels.append(d.strftime("%d %b"))
+        views_data.append(day_index.get(d, 0))
+        paid_data.append(paid_index.get(d, 0))
+
     context = {
         "payment_requests": payment_requests[:10],
         "transactions": transactions,
         "summary": summary,
+        "chart_labels": labels,
+        "chart_views": views_data,
+        "chart_paid": paid_data,
     }
     return render(request, "payapp/dashboard.html", context)
+
 
 
 @login_required
@@ -104,13 +149,29 @@ def payment_link_detail(request, short_code):
 def public_pay_page(request, short_code):
     payment_request = get_object_or_404(PaymentRequest, short_code=short_code)
 
+    # If expired, mark and show expired page
     if payment_request.is_expired():
         payment_request.status = PaymentRequest.STATUS_EXPIRED
         payment_request.save(update_fields=["status"])
         return render(request, "payapp/payment_expired.html", {"payment": payment_request})
 
+    # 🔹 Track a view every time this page is opened (GET or POST)
+    PaymentView.objects.create(
+        payment_request=payment_request,
+        ip_address=request.META.get("REMOTE_ADDR"),
+        user_agent=request.META.get("HTTP_USER_AGENT", ""),
+        referer=request.META.get("HTTP_REFERER", ""),
+        # country / city / device_type / platform can be filled later using UA/geo libs
+    )
+
     if request.method == "POST":
-        # Create Stripe Checkout session
+        # 🔹 Track that the user started the payment flow
+        PaymentConversion.objects.create(
+            payment_request=payment_request,
+            source="public_page",
+        )
+
+        # existing Stripe Checkout logic here
         success_url = request.build_absolute_uri(
             reverse("payapp:payment_success")
         ) + "?session_id={CHECKOUT_SESSION_ID}"
@@ -119,7 +180,6 @@ def public_pay_page(request, short_code):
             reverse("payapp:payment_failed")
         )
 
-        # Stripe amount is in the smallest currency unit (e.g. pence)
         amount_in_minor = int(payment_request.amount * 100)
 
         session = stripe.checkout.Session.create(
@@ -144,9 +204,9 @@ def public_pay_page(request, short_code):
             cancel_url=cancel_url,
         )
 
-        # Redirect the customer to Stripe Checkout
         return redirect(session.url, code=303)
 
+    # GET → just render page
     return render(request, "payapp/public_pay.html", {"payment": payment_request})
 
 

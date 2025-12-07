@@ -1,15 +1,15 @@
 {% extends "payapp/base.html" %}
 
-{% block title %}Sign in · FlowPay{% endblock %}
+{% block title %}Sign in · VyoPay{% endblock %}
 
 {% block content %}
 <div class="min-h-[70vh] flex items-center justify-center">
   <div class="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
-    <h1 class="text-center text-2xl font-semibold mb-2">
-      Welcome back <span class="text-emerald-400">FlowPay</span>
+    <h1 class="text-center text-2xl font-semibold mb-1">
+      Welcome back to <span class="text-cyan-400">VyoPay</span>
     </h1>
     <p class="text-center text-sm text-slate-400 mb-6">
-      Sign in to view your payment links and transactions.
+      Sign in to manage your payment links and track transactions.
     </p>
 
     {% if form.non_field_errors %}
@@ -35,7 +35,7 @@
           name="username"
           id="id_username"
           value="{{ form.username.value|default_if_none:'' }}"
-          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-sm"
           autocomplete="username"
           required
         />
@@ -52,7 +52,7 @@
           type="password"
           name="password"
           id="id_password"
-          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-sm"
           autocomplete="current-password"
           required
         />
@@ -63,15 +63,15 @@
       {% endif %}
 
       <button type="submit"
-              class="w-full mt-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-medium transition">
+              class="w-full mt-2 px-4 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold transition shadow-md shadow-cyan-500/30">
         Log in
       </button>
     </form>
 
     <p class="mt-4 text-center text-xs text-slate-400">
       Don’t have an account yet?
-      <span class="text-emerald-400 cursor-not-allowed opacity-60">
-        Register (coming soon)
+      <span class="text-cyan-400 cursor-not-allowed opacity-60">
+        Sign up (coming soon)
       </span>
     </p>
   </div>

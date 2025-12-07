@@ -2,6 +2,9 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class PaymentRequest(models.Model):
@@ -94,3 +97,52 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.id} - {self.status} - {self.amount} {self.currency}"
+
+
+class PaymentView(models.Model):
+    """
+    Each time someone opens a VyoPay payment link.
+    Used for analytics (views, conversion rate, etc.).
+    """
+    payment_request = models.ForeignKey(
+        "PaymentRequest",
+        related_name="views",
+        on_delete=models.CASCADE,
+    )
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    user_agent = models.TextField(blank=True, null=True)
+    referer = models.TextField(blank=True, null=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+
+    country = models.CharField(max_length=50, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+
+    device_type = models.CharField(max_length=50, blank=True, null=True)  # e.g. mobile / desktop
+    platform = models.CharField(max_length=50, blank=True, null=True)    # e.g. iOS / Android / Windows
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"View for {self.payment_request.short_code} at {self.timestamp}"
+
+
+class PaymentConversion(models.Model):
+    """
+    Whenever a user *starts* the payment (clicks Pay).
+    Lets us measure drop-off before successful payment.
+    """
+    payment_request = models.ForeignKey(
+        "PaymentRequest",
+        related_name="conversions",
+        on_delete=models.CASCADE,
+    )
+    timestamp = models.DateTimeField(default=timezone.now)
+    source = models.CharField(max_length=100, blank=True, null=True)  # e.g. 'public_page', 'qr'
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"Conversion for {self.payment_request.short_code} at {self.timestamp}"

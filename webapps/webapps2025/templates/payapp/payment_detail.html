@@ -1,5 +1,5 @@
 {% extends "payapp/base.html" %}
-{% block title %}Payment Link · FlowPay{% endblock %}
+{% block title %}Payment link · VyoPay{% endblock %}
 
 {% block content %}
 <div class="max-w-xl mx-auto">
@@ -7,15 +7,15 @@
     ← Back to dashboard
   </a>
 
-  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+  <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-semibold mb-1">Payment Link Created</h1>
+        <h1 class="text-xl font-semibold mb-1">VyoPay link created</h1>
         <p class="text-sm text-slate-400">
-          Share this link with your customer to receive payment.
+          Share this link to get paid through a secure hosted checkout.
         </p>
       </div>
-      <span class="px-2 py-1 rounded-full text-[11px] bg-slate-800 text-slate-200">
+      <span class="px-2 py-1 rounded-full text-[11px] bg-slate-800 text-slate-200 border border-slate-700">
         {{ payment.status }}
       </span>
     </div>
@@ -26,7 +26,7 @@
         {{ payment.amount }} {{ payment.currency }}
       </p>
       <p class="text-xs text-slate-500 mt-1">
-        {{ payment.description|default:"No description" }}
+        {{ payment.description|default:"No description provided" }}
       </p>
       <p class="text-[11px] text-slate-500 mt-2">
         Expires: {{ payment.expires_at|default:"No expiry" }}
@@ -52,7 +52,7 @@
         </button>
       </div>
       <p class="text-[11px] text-slate-500 mt-1">
-        Send this URL via email, WhatsApp, or SMS.
+        Send this VyoPay link via email, WhatsApp, or SMS.
       </p>
     </div>
 
