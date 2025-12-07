@@ -7,3 +7,5 @@ gunicorn
 whitenoise
 django-widget-tweaks
 psycopg2-binary
+celery==5.5.3
+django_celery_results==2.6.0
