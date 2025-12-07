@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Payment receipt · VyoPay</title>
+</head>
+<body style="font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background:#020617; color:#e2e8f0; padding:24px;">
+  <div style="max-width:480px;margin:0 auto;background:#020617;border:1px solid #1e293b;border-radius:16px;padding:20px;">
+    <h1 style="font-size:18px;margin-bottom:4px;">Payment received</h1>
+    <p style="font-size:14px;color:#9ca3af;margin-top:0;margin-bottom:16px;">
+      You just received a payment via VyoPay.
+    </p>
+
+    <div style="background:#020617;border-radius:12px;border:1px solid #1e293b;padding:12px;margin-bottom:16px;">
+      <p style="font-size:12px;color:#9ca3af;margin:0 0 4px 0;">Amount</p>
+      <p style="font-size:18px;margin:0 0 4px 0;">
+        {{ transaction.amount }} {{ transaction.currency }}
+      </p>
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        {{ payment.description|default:"No description" }}
+      </p>
+    </div>
+
+    <p style="font-size:12px;color:#9ca3af;margin:0 0 8px 0;">
+      Payment link code: <strong>{{ payment.short_code }}</strong><br>
+      Transaction ID: <strong>{{ transaction.id }}</strong><br>
+      Time: {{ transaction.created_at }}
+    </p>
+
+    <p style="font-size:11px;color:#6b7280;margin-top:18px;">
+      You can view this payment and others in your VyoPay dashboard.
+    </p>
+  </div>
+</body>
+</html>

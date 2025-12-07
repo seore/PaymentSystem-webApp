@@ -1,9 +1,13 @@
 import secrets
 import stripe
+import qrcode
 
 from datetime import timedelta
+from io import BytesIO
 
 from django.db.models.functions import TruncDate
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count, Q
@@ -165,7 +169,7 @@ def public_pay_page(request, short_code):
     )
 
     if request.method == "POST":
-        # 🔹 Track that the user started the payment flow
+        # Track that the user started the payment flow
         PaymentConversion.objects.create(
             payment_request=payment_request,
             source="public_page",
@@ -210,6 +214,27 @@ def public_pay_page(request, short_code):
     return render(request, "payapp/public_pay.html", {"payment": payment_request})
 
 
+@login_required
+def payment_qr(request, short_code):
+    payment = get_object_or_404(
+        PaymentRequest,
+        short_code=short_code,
+        merchant=request.user,
+    )
+
+    pay_url = request.build_absolute_uri(
+        reverse("payapp:public_pay", args=[payment.short_code])
+    )
+
+    # Generate QR
+    qr = qrcode.make(pay_url)
+    buffer = BytesIO()
+    qr.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return HttpResponse(buffer.getvalue(), content_type="image/png")
+
+
 @csrf_exempt
 def stripe_webhook(request):
     """
@@ -221,12 +246,14 @@ def stripe_webhook(request):
     webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
     if not webhook_secret:
-        # If you haven't set it yet, just ignore for now
+        # If you haven't set it yet, don't try to verify in dev:
         return HttpResponse(status=200)
 
     try:
         event = stripe.Webhook.construct_event(
-            payload, sig_header, webhook_secret
+            payload=payload,
+            sig_header=sig_header,
+            secret=webhook_secret,
         )
     except ValueError:
         # Invalid payload
@@ -235,38 +262,73 @@ def stripe_webhook(request):
         # Invalid signature
         return HttpResponseBadRequest("Invalid signature")
 
-    # Handle the event type
+    # ─────────────────────────────────────────
+    # Handle only the event we care about
+    # ─────────────────────────────────────────
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
 
         short_code = session.get("metadata", {}).get("short_code")
-        amount_total = session.get("amount_total")  # in minor units
+        amount_total = session.get("amount_total")      # in minor units
         currency = session.get("currency", "gbp").upper()
         provider_txn_id = session.get("payment_intent") or session.get("id")
 
-        if short_code:
-            try:
-                payment_request = PaymentRequest.objects.get(short_code=short_code)
-            except PaymentRequest.DoesNotExist:
-                payment_request = None
+        if not short_code:
+            # Nothing we can link to, just acknowledge
+            return HttpResponse(status=200)
 
-            if payment_request:
-                # Mark as paid
-                payment_request.status = PaymentRequest.STATUS_PAID
-                payment_request.save(update_fields=["status"])
+        # Try to find the PaymentRequest
+        try:
+            payment_request = PaymentRequest.objects.get(short_code=short_code)
+        except PaymentRequest.DoesNotExist:
+            # Unknown link – ignore but return 200 so Stripe stops retrying
+            return HttpResponse(status=200)
 
-                # Create transaction record
-                Transaction.objects.create(
-                    payment_request=payment_request,
-                    status=Transaction.STATUS_SUCCESS,
-                    amount=(amount_total or 0) / 100 if amount_total else payment_request.amount,
-                    currency=currency,
-                    provider_txn_id=provider_txn_id or "",
-                    raw_response=event,
-                )
+        # Mark as paid
+        payment_request.status = PaymentRequest.STATUS_PAID
+        payment_request.save(update_fields=["status"])
 
-    # Return a 200 response to acknowledge receipt
+        # Create transaction record
+        txn = Transaction.objects.create(
+            payment_request=payment_request,
+            status=Transaction.STATUS_SUCCESS,
+            amount=(amount_total or 0) / 100 if amount_total else payment_request.amount,
+            currency=currency,
+            provider_txn_id=provider_txn_id or "",
+            raw_response=event,
+        )
+
+        # ─────────────────────────────
+        # Send email receipt to merchant
+        # ─────────────────────────────
+        to_email = payment_request.merchant.email or None
+        if to_email:
+            subject = "VyoPay payment received"
+            html_content = render_to_string(
+                "emails/payment_receipt.html",
+                {"payment": payment_request, "transaction": txn},
+            )
+            msg = EmailMultiAlternatives(
+                subject=subject,
+                body="Payment received via VyoPay.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[to_email],
+            )
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+
+    # Always return 200 so Stripe knows we handled the webhook
     return HttpResponse(status=200)
+
+
+@login_required
+def payment_receipt(request, transaction_id):
+    txn = get_object_or_404(
+        Transaction,
+        id=transaction_id,
+        payment_request__merchant=request.user,
+    )
+    return render(request, "payapp/payment_receipt.html", {"transaction": txn})
 
 
 
@@ -276,7 +338,6 @@ def payment_success(request):
 
 def payment_failed(request):
     return render(request, "payapp/payment_failed.html")
-
 
 def logout_view(request):
     """
