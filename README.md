@@ -25,7 +25,3 @@ Modern, secure, Stripe-powered hosted checkout links designed for freelancers, s
 ## 🌍 Why VyoPay?
 
 VyoPay enables card payments in seconds — especially important in emerging markets where online checkout infrastructure is limited or expensive. VyoPay removes complexity so businesses can accept payments instantly with zero integration work.
-
----
-
-## 📦 Preview
