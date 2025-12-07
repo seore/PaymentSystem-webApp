@@ -27,6 +27,7 @@ INSTALLED_APPS = [
 
     "payapp",
     "register",
+    "widget_tweaks",
 ]
 
 MIDDLEWARE = [

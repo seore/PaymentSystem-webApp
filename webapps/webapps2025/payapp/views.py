@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, HttpResponseBadRequest
 
 from .models import PaymentRequest, Transaction, PaymentView, PaymentConversion
-
+from .forms import PaymentRequestForm
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -47,7 +47,6 @@ def dashboard(request):
     )
 
     # Simple analytics: last 7 days views & payments
-    from datetime import timedelta
     today = timezone.now().date()
     week_ago = today - timedelta(days=6)
 
@@ -72,7 +71,6 @@ def dashboard(request):
         .order_by("day")
     )
 
-    # Build arrays for Chart.js
     labels = []
     views_data = []
     paid_data = []
@@ -97,37 +95,37 @@ def dashboard(request):
     return render(request, "payapp/dashboard.html", context)
 
 
-
+# ─────────────────────────────────────
+# Create payment request (form-based)
+# ─────────────────────────────────────
 @login_required
 @require_http_methods(["GET", "POST"])
 def create_payment_request(request):
     if request.method == "POST":
-        amount = request.POST.get("amount")
-        currency = request.POST.get("currency", "GBP").upper()
-        description = request.POST.get("description", "")
-        expiry_days = request.POST.get("expiry_days") or "7"
+        form = PaymentRequestForm(request.POST)
+        if form.is_valid():
+            payment_request = form.save(commit=False)
+            payment_request.merchant = request.user
+            payment_request.short_code = _generate_short_code()
 
-        try:
-            expiry_days = int(expiry_days)
-        except ValueError:
-            expiry_days = 7
+            expiry_days = form.cleaned_data.get("expiry_days") or 7
+            payment_request.expires_at = timezone.now() + timedelta(days=expiry_days)
 
-        short_code = _generate_short_code()
-        expires_at = timezone.now() + timedelta(days=expiry_days)
+            payment_request.save()
 
-        payment_request = PaymentRequest.objects.create(
-            merchant=request.user,
-            short_code=short_code,
-            amount=amount,
-            currency=currency,
-            description=description,
-            expires_at=expires_at,
+            return redirect(
+                "payapp:payment_link_detail",
+                short_code=payment_request.short_code,
+            )
+    else:
+        form = PaymentRequestForm(
+            initial={
+                "currency": "GBP",
+                "expiry_days": 7,
+            }
         )
 
-        return redirect("payapp:payment_detail", short_code=payment_request.short_code)
-
-    return render(request, "payapp/payment_new.html")
-
+    return render(request, "payapp/payment_new.html", {"form": form})
 
 
 @login_required
@@ -159,13 +157,12 @@ def public_pay_page(request, short_code):
         payment_request.save(update_fields=["status"])
         return render(request, "payapp/payment_expired.html", {"payment": payment_request})
 
-    # 🔹 Track a view every time this page is opened (GET or POST)
+    # Track a view every time this page is opened (GET or POST)
     PaymentView.objects.create(
         payment_request=payment_request,
         ip_address=request.META.get("REMOTE_ADDR"),
         user_agent=request.META.get("HTTP_USER_AGENT", ""),
         referer=request.META.get("HTTP_REFERER", ""),
-        # country / city / device_type / platform can be filled later using UA/geo libs
     )
 
     if request.method == "POST":
@@ -175,7 +172,6 @@ def public_pay_page(request, short_code):
             source="public_page",
         )
 
-        # existing Stripe Checkout logic here
         success_url = request.build_absolute_uri(
             reverse("payapp:payment_success")
         ) + "?session_id={CHECKOUT_SESSION_ID}"
@@ -194,7 +190,8 @@ def public_pay_page(request, short_code):
                     "price_data": {
                         "currency": payment_request.currency.lower(),
                         "product_data": {
-                            "name": payment_request.description or f"Payment {payment_request.short_code}",
+                            "name": payment_request.description
+                            or f"Payment {payment_request.short_code}",
                         },
                         "unit_amount": amount_in_minor,
                     },
@@ -210,7 +207,6 @@ def public_pay_page(request, short_code):
 
         return redirect(session.url, code=303)
 
-    # GET → just render page
     return render(request, "payapp/public_pay.html", {"payment": payment_request})
 
 
@@ -226,7 +222,6 @@ def payment_qr(request, short_code):
         reverse("payapp:public_pay", args=[payment.short_code])
     )
 
-    # Generate QR
     qr = qrcode.make(pay_url)
     buffer = BytesIO()
     qr.save(buffer, format="PNG")
@@ -246,7 +241,6 @@ def stripe_webhook(request):
     webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
     if not webhook_secret:
-        # If you haven't set it yet, don't try to verify in dev:
         return HttpResponse(status=200)
 
     try:
@@ -256,39 +250,29 @@ def stripe_webhook(request):
             secret=webhook_secret,
         )
     except ValueError:
-        # Invalid payload
         return HttpResponseBadRequest("Invalid payload")
     except stripe.error.SignatureVerificationError:
-        # Invalid signature
         return HttpResponseBadRequest("Invalid signature")
 
-    # ─────────────────────────────────────────
-    # Handle only the event we care about
-    # ─────────────────────────────────────────
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
 
         short_code = session.get("metadata", {}).get("short_code")
-        amount_total = session.get("amount_total")      # in minor units
+        amount_total = session.get("amount_total")
         currency = session.get("currency", "gbp").upper()
         provider_txn_id = session.get("payment_intent") or session.get("id")
 
         if not short_code:
-            # Nothing we can link to, just acknowledge
             return HttpResponse(status=200)
 
-        # Try to find the PaymentRequest
         try:
             payment_request = PaymentRequest.objects.get(short_code=short_code)
         except PaymentRequest.DoesNotExist:
-            # Unknown link – ignore but return 200 so Stripe stops retrying
             return HttpResponse(status=200)
 
-        # Mark as paid
         payment_request.status = PaymentRequest.STATUS_PAID
         payment_request.save(update_fields=["status"])
 
-        # Create transaction record
         txn = Transaction.objects.create(
             payment_request=payment_request,
             status=Transaction.STATUS_SUCCESS,
@@ -298,9 +282,6 @@ def stripe_webhook(request):
             raw_response=event,
         )
 
-        # ─────────────────────────────
-        # Send email receipt to merchant
-        # ─────────────────────────────
         to_email = payment_request.merchant.email or None
         if to_email:
             subject = "VyoPay payment received"
@@ -317,7 +298,6 @@ def stripe_webhook(request):
             msg.attach_alternative(html_content, "text/html")
             msg.send()
 
-    # Always return 200 so Stripe knows we handled the webhook
     return HttpResponse(status=200)
 
 
@@ -331,7 +311,6 @@ def payment_receipt(request, transaction_id):
     return render(request, "payapp/payment_receipt.html", {"transaction": txn})
 
 
-
 def payment_success(request):
     return render(request, "payapp/payment_success.html")
 
@@ -339,10 +318,7 @@ def payment_success(request):
 def payment_failed(request):
     return render(request, "payapp/payment_failed.html")
 
+
 def logout_view(request):
-    """
-    Simple logout that works with a GET and redirects to login.
-    """
     logout(request)
     return redirect("login")
-

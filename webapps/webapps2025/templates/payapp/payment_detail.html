@@ -1,82 +1,99 @@
 {% extends "payapp/base.html" %}
-{% block title %}Payment link · VyoPay{% endblock %}
+{% block title %}VyoPay link · {{ payment.short_code }}{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto">
-  <a href="{% url 'payapp:dashboard' %}" class="text-xs text-slate-400 hover:text-slate-200 mb-3 inline-flex items-center">
+<div class="max-w-3xl mx-auto">
+  <a href="{% url 'payapp:dashboard' %}" class="text-[11px] text-slate-500 hover:text-slate-300 flex items-center gap-1 mb-4">
     ← Back to dashboard
   </a>
 
-  <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
-    <div class="flex items-center justify-between">
+  <div class="glass rounded-2xl border border-slate-800/80 shadow-xl p-6 md:p-7 hover-card">
+    <div class="flex items-center justify-between mb-4">
       <div>
-        <h1 class="text-xl font-semibold mb-1">VyoPay link created</h1>
-        <p class="text-sm text-slate-400">
-          Share this link to get paid through a secure hosted checkout.
+        <p class="text-xs text-slate-400 mb-1">VyoPay link created</p>
+        <h1 class="text-xl font-semibold">
+          {{ payment.amount }} {{ payment.currency|upper }}
+        </h1>
+        <p class="text-xs text-slate-400 mt-1">
+          {{ payment.description|default:"No description provided" }}
         </p>
       </div>
-      <span class="px-2 py-1 rounded-full text-[11px] bg-slate-800 text-slate-200 border border-slate-700">
-        {{ payment.status }}
-      </span>
-    </div>
-
-    <div class="border border-slate-800 rounded-xl p-3 bg-slate-950/60">
-      <p class="text-xs text-slate-400 mb-1">Amount</p>
-      <p class="text-lg font-semibold">
-        {{ payment.amount }} {{ payment.currency }}
-      </p>
-      <p class="text-xs text-slate-500 mt-1">
-        {{ payment.description|default:"No description provided" }}
-      </p>
-      <p class="text-[11px] text-slate-500 mt-2">
-        Expires: {{ payment.expires_at|default:"No expiry" }}
-      </p>
-    </div>
-
-    <div>
-      <label class="block text-sm text-slate-200 mb-1">Payment link</label>
-      <div class="flex gap-2">
-        <input
-          type="text"
-          readonly
-          id="payment-link-input"
-          class="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-300"
-          value="{{ payment_url }}"
-          onclick="this.select();"
-        >
-        <button
-          type="button"
-          onclick="navigator.clipboard.writeText(document.getElementById('payment-link-input').value)"
-          class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-100">
-          Copy
-        </button>
+      <div class="flex flex-col items-end gap-2">
+        {% if payment.status == payment.STATUS_PAID %}
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/40">
+            PAID
+          </span>
+        {% elif payment.status == payment.STATUS_EXPIRED %}
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-700/60 text-slate-300 border border-slate-500/60">
+            EXPIRED
+          </span>
+        {% else %}
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/40">
+            PENDING
+          </span>
+        {% endif %}
+        <p class="text-[11px] text-slate-500">Link code: {{ payment.short_code }}</p>
       </div>
-      <p class="text-[11px] text-slate-500 mt-1">
-        Send this VyoPay link via email, WhatsApp, or SMS.
-      </p>
     </div>
 
-    <div class="pt-2 border-t border-slate-800 mt-3">
-      <p class="text-sm text-slate-200 mb-2">QR code</p>
-      <p class="text-[11px] text-slate-500 mb-2">
-        Customers can scan this code to open the VyoPay link on their phone.
-      </p>
-      <img
-        src="{% url 'payapp:payment_qr' payment.short_code %}"
-        alt="Payment QR"
-        class="w-32 h-32 border border-slate-800 rounded-xl bg-slate-950 p-2"
-      >
-    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+      <div class="space-y-3">
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-3">
+          <p class="text-[11px] text-slate-400 mb-1">Payment link</p>
+          <div class="flex items-center gap-2">
+            <input
+              id="vyopay-link-input"
+              type="text"
+              readonly
+              value="{{ request.build_absolute_uri|slice:':-1' }}{% url 'payapp:public_pay' payment.short_code %}"
+              class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none"
+            >
+            <button type="button"
+                    onclick="copyVyoPayLink()"
+                    class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px]">
+              Copy
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">
+            Send this VyoPay link via email, WhatsApp, or SMS.
+          </p>
+        </div>
 
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-3 text-[11px] text-slate-400">
+          <p>Expires:
+            {% if payment.expires_at %}
+              {{ payment.expires_at }}
+            {% else %}
+              Never
+            {% endif %}
+          </p>
+          <p class="mt-1">Created: {{ payment.created_at }}</p>
+        </div>
+      </div>
 
-    <div class="pt-2">
-      <p class="text-xs text-slate-500">
-        Link code: <span class="font-mono">{{ payment.short_code }}</span>
-      </p>
-      <p class="text-xs text-slate-500">
-        Created at: {{ payment.created_at }}
-      </p>
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col items-center justify-center">
+        <p class="text-[11px] text-slate-400 mb-2">QR code</p>
+        <p class="text-[11px] text-slate-500 mb-3 text-center">
+          Customers can scan this code to open the VyoPay link on their phone.
+        </p>
+        <img
+          src="{% url 'payapp:payment_qr' payment.short_code %}"
+          alt="VyoPay QR"
+          class="w-32 h-32 border border-slate-800 rounded-xl bg-slate-950 p-2"
+        >
+      </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyVyoPayLink() {
+    const input = document.getElementById('vyopay-link-input');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).catch(() => {});
+  }
+</script>
 {% endblock %}
