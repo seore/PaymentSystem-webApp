@@ -1,71 +1,141 @@
 {% extends "payapp/base.html" %}
+
 {% block title %}Dashboard · FlowPay{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-  <h1 class="text-2xl font-semibold">Dashboard</h1>
-  <a href="{% url 'payapp:payment_new' %}"
-     class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-medium">
-    + New Payment Link
-  </a>
-</div>
+<div class="space-y-6">
 
-<div class="grid md:grid-cols-3 gap-4 mb-8">
-  <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-    <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Total Volume</p>
-    <p class="text-xl font-semibold">
-      {{ summary.total_amount|default:"0.00" }}
-    </p>
+  <!-- Header + New Payment button -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">Dashboard</h1>
+      <p class="text-sm text-slate-400">
+        Overview of your payment links and recent transactions.
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'payapp:payment_new' %}"
+         class="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-medium text-sm">
+        <span class="mr-1">＋</span> New Payment Link
+      </a>
+    </div>
   </div>
-  <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-    <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Paid</p>
-    <p class="text-xl font-semibold">
-      {{ summary.total_paid|default:"0.00" }}
-    </p>
-  </div>
-  <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-    <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Payment Links</p>
-    <p class="text-xl font-semibold">{{ summary.count|default:"0" }}</p>
-  </div>
-</div>
 
-<h2 class="text-lg font-semibold mb-2">Recent Payment Links</h2>
-<div class="overflow-x-auto mb-8">
-  <table class="min-w-full text-sm">
-    <thead class="bg-slate-900">
-      <tr class="text-left text-slate-400">
-        <th class="px-3 py-2">Code</th>
-        <th class="px-3 py-2">Amount</th>
-        <th class="px-3 py-2">Status</th>
-        <th class="px-3 py-2">Created</th>
-        <th class="px-3 py-2">Link</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in payment_requests %}
-      <tr class="border-t border-slate-800">
-        <td class="px-3 py-2 font-mono text-xs">{{ p.short_code }}</td>
-        <td class="px-3 py-2">{{ p.amount }} {{ p.currency }}</td>
-        <td class="px-3 py-2">
-          <span class="px-2 py-1 rounded-full text-xs bg-slate-800">
-            {{ p.status }}
-          </span>
-        </td>
-        <td class="px-3 py-2 text-slate-400 text-xs">{{ p.created_at }}</td>
-        <td class="px-3 py-2">
-          <input type="text" readonly
-                 class="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-full text-xs"
-                 value="{{ request.scheme }}://{{ request.get_host }}{% url 'payapp:public_pay' p.short_code %}">
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td class="px-3 py-3 text-slate-400 text-sm" colspan="5">
-          No payment links yet. Create your first one above.
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <!-- Summary cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Total Volume</p>
+      <p class="text-2xl font-semibold">
+        {{ summary.total_amount|default:"0.00" }}
+      </p>
+      <p class="text-xs text-slate-500 mt-1">All payment links created</p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Paid</p>
+      <p class="text-2xl font-semibold">
+        {{ summary.total_paid|default:"0.00" }}
+      </p>
+      <p class="text-xs text-slate-500 mt-1">Successfully completed payments</p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Payment Links</p>
+      <p class="text-2xl font-semibold">{{ summary.count|default:"0" }}</p>
+      <p class="text-xs text-slate-500 mt-1">Total links you’ve created</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent payment links -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-slate-100">Recent Payment Links</h2>
+        <span class="text-xs text-slate-500">Latest 10</span>
+      </div>
+
+      <div class="space-y-2">
+        {% for p in payment_requests %}
+          <div class="flex flex-col border border-slate-800 rounded-lg px-3 py-2 bg-slate-950/60">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-mono text-xs text-slate-300">
+                {{ p.short_code }}
+              </span>
+              <span class="text-sm font-semibold">
+                {{ p.amount }} {{ p.currency }}
+              </span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-[11px] text-slate-500 truncate max-w-[70%]">
+                {{ p.description|default:"No description" }}
+              </span>
+              <span class="px-2 py-0.5 rounded-full text-[11px] bg-slate-800 text-slate-200">
+                {{ p.status }}
+              </span>
+            </div>
+            <div class="mt-1">
+              <input
+                type="text"
+                readonly
+                class="w-full mt-1 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-400"
+                value="{{ request.scheme }}://{{ request.get_host }}{% url 'payapp:public_pay' p.short_code %}"
+                onclick="this.select(); document.execCommand('copy');"
+              >
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500">
+            You don’t have any payment links yet. Create one to get started.
+          </p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Recent transactions -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-slate-100">Recent Transactions</h2>
+        <span class="text-xs text-slate-500">Latest 20</span>
+      </div>
+
+      <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+        {% for t in transactions %}
+          <div class="flex items-start justify-between border border-slate-800 rounded-lg px-3 py-2 bg-slate-950/60">
+            <div>
+              <p class="text-sm font-medium">
+                {{ t.amount }} {{ t.currency }}
+              </p>
+              <p class="text-[11px] text-slate-500">
+                {{ t.payment_request.description|default:"Payment" }}
+              </p>
+              <p class="text-[11px] text-slate-600 mt-1">
+                {{ t.created_at }}
+              </p>
+            </div>
+            <div class="text-right">
+              <span class="px-2 py-0.5 rounded-full text-[11px]
+                           {% if t.status == 'SUCCESS' %}
+                             bg-emerald-500/20 text-emerald-300 border border-emerald-500/40
+                           {% elif t.status == 'FAILED' %}
+                             bg-red-500/20 text-red-300 border border-red-500/40
+                           {% else %}
+                             bg-slate-800 text-slate-200 border border-slate-700
+                           {% endif %}">
+                {{ t.status }}
+              </span>
+              <p class="text-[10px] text-slate-500 mt-1">
+                {{ t.id }}
+              </p>
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500">
+            No transactions yet. Once payments are made, they’ll appear here.
+          </p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

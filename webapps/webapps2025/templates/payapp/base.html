@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{% block title %}FlowPay{% endblock %}</title>
+  <title>{% block title %}PayApp{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -11,7 +11,7 @@
 <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
   <div class="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
     <a href="{% url 'payapp:dashboard' %}" class="font-semibold text-xl tracking-tight">
-      FlowPay<span class="text-emerald-400">.io</span>
+      PayApp<span class="text-emerald-400">.io</span>
     </a>
     <nav class="text-sm space-x-4">
       {% if user.is_authenticated %}

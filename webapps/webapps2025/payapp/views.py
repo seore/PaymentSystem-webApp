@@ -6,6 +6,7 @@ from django.db.models import Sum, Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import logout
 from django.utils import timezone
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from .models import PaymentRequest, Transaction
@@ -25,12 +26,15 @@ def dashboard(request):
         count=Count("id"),
     )
 
-    transactions = Transaction.objects.filter(
-        payment_request__merchant=request.user
-    ).select_related("payment_request")[:20]
+    transactions = (
+        Transaction.objects
+        .filter(payment_request__merchant=request.user)
+        .select_related("payment_request")
+        .order_by("-created_at")[:20]
+    )
 
     context = {
-        "payment_requests": payment_requests[:20],
+        "payment_requests": payment_requests[:10],
         "transactions": transactions,
         "summary": summary,
     }
@@ -42,13 +46,19 @@ def dashboard(request):
 def create_payment_request(request):
     if request.method == "POST":
         amount = request.POST.get("amount")
-        currency = request.POST.get("currency", "GBP")
+        currency = request.POST.get("currency", "GBP").upper()
         description = request.POST.get("description", "")
+        expiry_days = request.POST.get("expiry_days") or "7"
+
+        try:
+            expiry_days = int(expiry_days)
+        except ValueError:
+            expiry_days = 7
 
         short_code = _generate_short_code()
-        expires_at = timezone.now() + timedelta(days=7)
+        expires_at = timezone.now() + timedelta(days=expiry_days)
 
-        PaymentRequest.objects.create(
+        payment_request = PaymentRequest.objects.create(
             merchant=request.user,
             short_code=short_code,
             amount=amount,
@@ -56,9 +66,30 @@ def create_payment_request(request):
             description=description,
             expires_at=expires_at,
         )
-        return redirect("payapp:dashboard")
+
+        return redirect("payapp:payment_detail", short_code=payment_request.short_code)
 
     return render(request, "payapp/payment_new.html")
+
+
+
+@login_required
+def payment_link_detail(request, short_code):
+    payment = get_object_or_404(
+        PaymentRequest,
+        short_code=short_code,
+        merchant=request.user,
+    )
+
+    payment_url = request.build_absolute_uri(
+        reverse("payapp:public_pay", args=[payment.short_code])
+    )
+
+    context = {
+        "payment": payment,
+        "payment_url": payment_url,
+    }
+    return render(request, "payapp/payment_detail.html", context)
 
 
 @require_http_methods(["GET", "POST"])
