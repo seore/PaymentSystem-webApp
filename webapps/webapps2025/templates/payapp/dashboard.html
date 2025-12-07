@@ -1,86 +1,71 @@
-{% extends 'base.html' %}
-{% block body_class %}theme-hero{% endblock %}
-{% load crispy_forms_tags %}
+{% extends "payapp/base.html" %}
+{% block title %}Dashboard · FlowPay{% endblock %}
 
 {% block content %}
-<section class="dashboard-wrap">
-  <div class="dashboard-card card">
-    <div class="card-header text-center dashboard-head">
-      <h2 class="mb-0">Dashboard</h2>
-    </div>
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-semibold">Dashboard</h1>
+  <a href="{% url 'payapp:payment_new' %}"
+     class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-medium">
+    + New Payment Link
+  </a>
+</div>
 
-    <div class="card-body text-center">
-      <h4 class="mb-1">Welcome, {{ user.username }}!</h4>
-      <p class="lead mb-3">
-        Your Balance:
-        <strong>{{ account.balance }} {{ account.user.currency }}</strong>
-      </p>
-      <hr>
-
-      <div class="row g-3">
-        <div class="col-md-6">
-          <div class="card border-info h-100">
-            <div class="card-header">Recent Transactions</div>
-            <div class="card-body">
-              {% if transaction_display_data %}
-                <ul class="list-group">
-                  {% for transaction in transaction_display_data %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      {{ transaction.status }} — {{ transaction.display_amount }}
-                      <span class="text-muted">
-                        {{ transaction.timestamp|date:"Y-m-d H:i" }}
-                      </span>
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% else %}
-                <p class="text-muted mb-0">No recent transactions.</p>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="card border-warning h-100">
-            <div class="card-header">Account Insights</div>
-            <div class="card-body text-start">
-              <p class="mb-2"><strong>Total Transactions:</strong> {{ total_transactions }}</p>
-              <p class="mb-2">
-                <strong>Last Transaction:</strong>
-                {% if last_transaction %}
-                  {% if last_transaction.converted_amount %}
-                    {{ last_transaction.converted_amount }} {{ last_transaction.converted_currency }}
-                  {% else %}
-                    {{ last_transaction.amount }} {{ account.user.currency }}
-                  {% endif %}
-                  on {{ last_transaction.timestamp|date:"Y-m-d H:i" }}
-                {% else %}
-                  No transactions yet.
-                {% endif %}
-              </p>
-              <p class="mb-0"><strong>Most Used Currency:</strong> {{ most_used_currency }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-4">
-        <a href="{% url 'transaction_history' %}" class="btn btn-dashboard px-4">View All Transactions</a>
-      </div>
-
-      <p class="text-muted mt-3 mb-0">Keep track of your spending and manage your finances efficiently.</p>
-    </div>
+<div class="grid md:grid-cols-3 gap-4 mb-8">
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+    <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Total Volume</p>
+    <p class="text-xl font-semibold">
+      {{ summary.total_amount|default:"0.00" }}
+    </p>
   </div>
-</section>
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+    <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Paid</p>
+    <p class="text-xl font-semibold">
+      {{ summary.total_paid|default:"0.00" }}
+    </p>
+  </div>
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+    <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Payment Links</p>
+    <p class="text-xl font-semibold">{{ summary.count|default:"0" }}</p>
+  </div>
+</div>
 
-{% if messages %}
-  {% for message in messages %}
-    {% if message.tags == 'success' %}
-      <div class="alert alert-success alert-dismissible fade show position-fixed bottom-0 start-50 translate-middle-x mb-3" role="alert" style="z-index:1080; max-width:640px;">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endif %}
-  {% endfor %}
-{% endif %}
+<h2 class="text-lg font-semibold mb-2">Recent Payment Links</h2>
+<div class="overflow-x-auto mb-8">
+  <table class="min-w-full text-sm">
+    <thead class="bg-slate-900">
+      <tr class="text-left text-slate-400">
+        <th class="px-3 py-2">Code</th>
+        <th class="px-3 py-2">Amount</th>
+        <th class="px-3 py-2">Status</th>
+        <th class="px-3 py-2">Created</th>
+        <th class="px-3 py-2">Link</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in payment_requests %}
+      <tr class="border-t border-slate-800">
+        <td class="px-3 py-2 font-mono text-xs">{{ p.short_code }}</td>
+        <td class="px-3 py-2">{{ p.amount }} {{ p.currency }}</td>
+        <td class="px-3 py-2">
+          <span class="px-2 py-1 rounded-full text-xs bg-slate-800">
+            {{ p.status }}
+          </span>
+        </td>
+        <td class="px-3 py-2 text-slate-400 text-xs">{{ p.created_at }}</td>
+        <td class="px-3 py-2">
+          <input type="text" readonly
+                 class="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-full text-xs"
+                 value="{{ request.scheme }}://{{ request.get_host }}{% url 'payapp:public_pay' p.short_code %}">
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td class="px-3 py-3 text-slate-400 text-sm" colspan="5">
+          No payment links yet. Create your first one above.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

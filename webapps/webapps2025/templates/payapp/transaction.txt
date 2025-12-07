@@ -1,6 +1,0 @@
-{{ heading }}
-Hi {{ name }},
-{{ line1 }}
-Amount: {{ amount_display }}{% if converted_display %} (Converted: {{ converted_display }}){% endif %}
-Reference: {{ reference }}
-View: {{ dashboard_url }}

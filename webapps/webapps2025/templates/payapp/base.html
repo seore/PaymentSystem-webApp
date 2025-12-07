@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}FlowPay{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+<header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
+  <div class="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
+    <a href="{% url 'payapp:dashboard' %}" class="font-semibold text-xl tracking-tight">
+      FlowPay<span class="text-emerald-400">.io</span>
+    </a>
+    <nav class="text-sm space-x-4">
+      {% if user.is_authenticated %}
+        <span class="opacity-80">Hi, {{ user.username }}</span>
+        <a href="{% url 'logout' %}" class="text-emerald-400 hover:underline">Logout</a>
+      {% else %}
+        <a href="{% url 'login' %}" class="text-emerald-400 hover:underline">Login</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-6">
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>
