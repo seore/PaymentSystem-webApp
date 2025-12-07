@@ -9,6 +9,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = []  
 
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "payapp:dashboard"    
+LOGOUT_REDIRECT_URL = "login"           
+
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -72,7 +77,7 @@ TIME_ZONE = "Europe/London"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

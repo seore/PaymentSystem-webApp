@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth import logout
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
@@ -90,3 +91,12 @@ def payment_success(request):
 
 def payment_failed(request):
     return render(request, "payapp/payment_failed.html")
+
+
+def logout_view(request):
+    """
+    Simple logout that works with a GET and redirects to login.
+    """
+    logout(request)
+    return redirect("login")
+

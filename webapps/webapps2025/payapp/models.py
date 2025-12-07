@@ -63,7 +63,10 @@ class Transaction(models.Model):
         PaymentRequest,
         on_delete=models.CASCADE,
         related_name="transactions",
+        null=True,
+        blank=True,
     )
+
     payer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
